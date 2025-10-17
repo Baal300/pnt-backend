@@ -1,7 +1,6 @@
 import express from 'express';
 import axios from 'axios';
 import germanPokemonNames from '../../data/pkmn_german.json';
-import { parse } from 'path';
 
 const router = express.Router();
 
@@ -44,6 +43,7 @@ router.get('/', async (req, res) => {
   }
 
   if (lang === 'en') {
+    // Translate from German to English
     if (!name) {
       return res.status(400).json({ error: 'Missing "name" parameter' });
     }
@@ -60,6 +60,7 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ error: 'Pokémon (de) not found' });
     }
   } else if (lang === 'de' && !pokemonId && name) {
+    // Translate from English to German using name
     try {
       const response = await axios.get(
         `https://pokeapi.co/api/v2/pokemon-species/${name.toString()}`

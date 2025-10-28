@@ -4,9 +4,11 @@ import translateRouter from './routes/translate';
 import musicRouter from './routes/music';
 import criesRouter from './routes/cries';
 import dotenv from 'dotenv';
+import { Storage } from '@google-cloud/storage';
 
 dotenv.config();
 const app = express();
+export const storage = new Storage();
 app.use(cors());
 
 app.use('/api/translate', translateRouter);

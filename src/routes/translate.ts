@@ -93,6 +93,7 @@ router.get('/', async (req, res) => {
     }
 
     return res.json({
+      number: pokemonId,
       translated: translation.name,
       image: imageResponse.data.sprites.front_default,
     });

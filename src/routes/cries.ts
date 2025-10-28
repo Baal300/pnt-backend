@@ -1,5 +1,5 @@
 import express from 'express';
-import { getPokeCry } from '../services/pokecryService';
+import { streamCryAudio } from '../services/pokecryService';
 
 const router = express.Router();
 
@@ -17,15 +17,10 @@ router.get('/:id', async (req, res) => {
   }
 
   try {
-    const cryStream = await getPokeCry(cryId);
     res.setHeader('Content-Type', 'audio/ogg');
-    if (cryStream) {
-      cryStream.pipe(res);
-    } else {
-      return res
-        .status(404)
-        .json({ error: `Pokémon cry with id ${cryId} not found` });
-    }
+    res.setHeader('Cache-Control', 'max-age=3600');
+    streamCryAudio(res, `${cryId}.ogg`);
+    return res.status(200);
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch Pokémon cry' });
   }

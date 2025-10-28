@@ -1,37 +1,21 @@
 import dotenv from 'dotenv';
-import { Storage } from '@google-cloud/storage';
+import { storage } from '../index';
+import { Response } from 'express';
 const bucketName = 'pokecries';
 
-export const getPokeCry = async (pokemonId: string) => {
-  try {
-    const readStream = await createFileReadStream(`${pokemonId}.ogg`);
-    return readStream;
-  } catch (error) {
-    console.error('Error getting poke cry:', error);
-    return null;
-  }
-};
-
-async function createFileReadStream(fileName: string) {
-  const storage = new Storage();
+export const streamCryAudio = async (res: Response, fileName: string) => {
+  const time = Date.now();
 
   // Downloads the file
   try {
-    const fileReadStream = await storage
+    return storage
       .bucket(bucketName)
       .file(fileName)
-      .createReadStream();
-
-    // Handle stream errors
-    fileReadStream.on('error', (error) => {
-      console.error('Stream error:', error);
-    });
-
-    console.log(`gs://${bucketName}/${fileName} requested.`);
-    return fileReadStream;
+      .createReadStream()
+      .pipe(res);
   } catch (error) {
     console.error('Error downloading file:', error);
   }
 
   return null;
-}
+};

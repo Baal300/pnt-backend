@@ -1,0 +1,71 @@
+openapi: '3.0.3'
+info:
+    title: Pokémon Name Translator API
+    version: '1.0'
+servers:
+    - url: https://pnt-339846335431.europe-west1.run.app/api
+tags:
+    - name: translation
+      description: Translate Pokémon names between English and German
+paths:
+    /translation/{id or name}:
+        get:
+            tags:
+                - translation
+            summary: Get translation of a Pokémon name by ID or name
+            description: Language can be specified using the 'lang' query parameter ('en' for English, 'de' for German). Defaults to English.
+            operationId: getTranslation
+            parameters:
+                - name: id or name
+                  in: path
+                  required: true
+                  description: The Pokémon ID (number) or name (string) to translate
+                  schema:
+                      type: string
+                - name: lang
+                  in: query
+                  required: false
+                  description: Language code for translation ('en' or 'de'). Defaults to 'en'.
+                  schema:
+                      type: string
+                      enum:
+                          - en
+                          - de
+                      default: en
+            responses:
+                '200':
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    number:
+                                        type: integer
+                                        example: 25
+                                    translated:
+                                        type: string
+                                        example: Pikachu
+                                    image:
+                                        type: string
+                                        example: https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png
+                '400':
+                    description: Bad Request - Invalid parameters
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Invalid Pokémon ID or name.
+                '404':
+                    description: Not Found - Pokémon not found
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    error:
+                                        type: string
+                                        example: Pokémon not found.

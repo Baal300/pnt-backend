@@ -11,5 +11,11 @@ export enum SupportedLanguages {
     English = 'en',
     German = 'de',
     French = 'fr',
-    Japanese = 'jp',
+    Japanese = 'ja-hrkt',
+    JapaneseRomaji = 'ja-roma',
 }
+
+export type LocalizationData = {
+    name: string;
+    number: number;
+}[];

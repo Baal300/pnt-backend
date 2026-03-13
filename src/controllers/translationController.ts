@@ -19,7 +19,7 @@ export const getTranslation = async (req: Request, res: Response) => {
     if (
         !Object.values(SupportedLanguages).includes(
             sourceLanguage as SupportedLanguages,
-        ) &&
+        ) ||
         !Object.values(SupportedLanguages).includes(
             targetLanguage as SupportedLanguages,
         )

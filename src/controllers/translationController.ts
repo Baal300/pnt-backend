@@ -1,115 +1,54 @@
 import { Request, Response } from 'express';
-import axios from 'axios';
-import { getNumberFromGermanName as getPokedexNumberFromGermanName } from '../utils/helpers';
-import { NamesData } from '../types/pokemonName';
-import { PokeApiNamesData } from '../types/pokeApi';
-
-const isNumericId = (value: string): boolean => {
-    // Check if the value consists only of digits
-    return /^\d+$/.test(value);
-};
-
-const validateLanguageCode = (lang: string): boolean => {
-    // Check if the language code is exactly two alphabetic characters
-    return /^[a-zA-Z]{2}$/.test(lang);
-};
-
-type TranslationData = {
-    translated: string;
-    image: string;
-};
-
-type TranslationDTO = {
-    number: number;
-} & TranslationData;
-
-const fetchTranslationDataByPokedexNumber = async (
-    pokedexNumber: string,
-    lang: string
-): Promise<TranslationData> => {
-    const response = await axios.get(
-        `https://pokeapi.co/api/v2/pokemon-species/${pokedexNumber.toString()}`
-    );
-
-    const imageResponse = await axios.get(
-        `https://pokeapi.co/api/v2/pokemon/${pokedexNumber.toString()}/`
-    );
-
-    const names: PokeApiNamesData[] = response.data.names;
-    const translation = names.find((n: NamesData) => n.language.name === lang);
-
-    if (translation?.name) {
-        return {
-            translated: translation.name,
-            image: imageResponse.data.sprites.front_default,
-        };
-    } else {
-        throw new Error('Translation not found');
-    }
-};
+import {
+    getPokedexNumber,
+    fetchTranslationDataByPokedexNumber,
+} from '../services/translationService';
+import { TranslationDTO, SupportedLanguages } from '../types/translation';
+import { isNumericId } from '../utils/helpers';
 
 export const getTranslation = async (req: Request, res: Response) => {
     console.log('Received request for translation');
-    // Either numeric ID or name is provided in the path parameter
+    // Request by Pokédex number
     let pokedexNumber: string | undefined = isNumericId(req.params.id)
         ? req.params.id
         : undefined;
+    // Request by Pokémon name
     const pokemonName = !pokedexNumber ? req.params.id : undefined;
+    const { sourceLanguage, targetLanguage } = req.query;
 
-    // Translation defaults to English if not specified
-    const { lang = 'en' } = req.query;
-
-    if (!validateLanguageCode(lang as string)) {
+    if (
+        !Object.values(SupportedLanguages).includes(
+            sourceLanguage as SupportedLanguages,
+        ) &&
+        !Object.values(SupportedLanguages).includes(
+            targetLanguage as SupportedLanguages,
+        )
+    ) {
         return res
             .status(400)
             .json({ error: 'Bad request: Invalid language code' });
     }
 
-    if (lang === 'en') {
-        if (pokemonName) {
-            // Translate from German to English
-            console.log(`Fetching data for Pokémon (DE): ${pokemonName}`);
+    // If only Pokémon name is provided, get the Pokédex number first
+    if (pokemonName) {
+        pokedexNumber = await getPokedexNumber(
+            pokedexNumber,
+            pokemonName,
+            sourceLanguage as SupportedLanguages,
+        );
 
-            if (!pokedexNumber) {
-                // Get numeric ID from German name
-                const extractedPokedexNumber = getPokedexNumberFromGermanName(
-                    pokemonName as string
-                );
-                pokedexNumber =
-                    extractedPokedexNumber !== null
-                        ? extractedPokedexNumber.toString()
-                        : undefined;
-            }
-
-            if (!pokedexNumber) {
-                return res
-                    .status(404)
-                    .json({ error: 'Pokémon (DE) translation not found' });
-            }
-        }
-    } else if (lang === 'de' && pokemonName) {
-        // Translate from English to German using name
-        try {
-            const response = await axios.get(
-                `https://pokeapi.co/api/v2/pokemon-species/${pokemonName}`
-            );
-
-            // Get the Pokédex number
-            pokedexNumber = response.data.pokedex_numbers[0].entry_number;
-        } catch (error) {
+        if (!pokedexNumber) {
             return res.status(404).json({
-                error: `Pokémon with name "${pokemonName}" not found`,
+                error: `Pokémon with name "${pokemonName}" (${sourceLanguage}) not found`,
             });
         }
     }
 
-    // Use pokedexNumber to fetch translation data
+    // Use Pokédex number to fetch translation data
     try {
-        console.log(`Fetching data for Pokémon ID: ${pokedexNumber}`);
-
         const translationData = await fetchTranslationDataByPokedexNumber(
             pokedexNumber as string,
-            lang as string
+            targetLanguage as string,
         );
 
         const translationDTO: TranslationDTO = {
